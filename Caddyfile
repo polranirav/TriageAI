@@ -1,0 +1,5 @@
+:80 {
+	# Local reverse proxy: simulates production Caddy setup
+	# Forwards all traffic to FastAPI on port 8000
+	reverse_proxy localhost:8000
+}

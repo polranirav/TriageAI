@@ -1,0 +1,60 @@
+import asyncio
+from logging.config import fileConfig
+
+from sqlalchemy.ext.asyncio import create_async_engine  # noqa: F401
+
+from alembic import context
+
+# Alembic Config object — provides access to .ini values
+config = context.config
+
+# Interpret the config file for Python logging
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# Import all models here so Alembic can detect schema changes
+# from app.models import Base  # uncomment in Sprint 2
+target_metadata = None  # replaced with Base.metadata in Sprint 2
+
+
+def get_database_url() -> str:
+    """Read DATABASE_URL from app settings, overriding alembic.ini sqlalchemy.url."""
+    from app.config import settings
+
+    return settings.DATABASE_URL
+
+
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode — generates SQL without a DB connection."""
+    url = get_database_url()
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection):  # type: ignore[no-untyped-def]
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
+    """Run migrations in 'online' mode — connects to DB and applies changes."""
+    connectable = create_async_engine(get_database_url())
+
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+
+    await connectable.dispose()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    asyncio.run(run_migrations_online())
