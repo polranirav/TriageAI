@@ -22,6 +22,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application source
 COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
 
 # Switch to non-root user
 USER appuser
