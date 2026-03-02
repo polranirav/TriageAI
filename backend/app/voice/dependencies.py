@@ -17,7 +17,10 @@ async def validate_twilio_signature(request: Request) -> None:
     validator = RequestValidator(settings.TWILIO_AUTH_TOKEN)
     signature = request.headers.get("X-Twilio-Signature", "")
     form_data = dict(await request.form())
-    url = str(request.url)
+    # Caddy terminates TLS and forwards as HTTP internally, so request.url
+    # has scheme=http. Reconstruct with the public https:// base URL so the
+    # signature matches what Twilio signed.
+    url = str(request.url).replace("http://", "https://", 1)
 
     if not validator.validate(url, form_data, signature):
         logger.warning("invalid_twilio_signature", url=url)
