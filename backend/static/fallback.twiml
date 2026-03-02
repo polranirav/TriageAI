@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice" language="en-CA">
+    We're sorry, our triage service is temporarily unavailable.
+    For a medical emergency, please hang up and call 9-1-1.
+    For urgent care, please call Telehealth Ontario at 1-866-797-0000.
+    Please try calling back in a few minutes.
+  </Say>
+  <Hangup/>
+</Response>

@@ -38,4 +38,4 @@ jobs:
           ENVIRONMENT: development
           SECRET_KEY: ci-test-secret-key-not-used-in-production
           DATABASE_URL: postgresql+asyncpg://user:pass@localhost:5432/triageai
-        run: pytest tests/ -v --cov=app --cov-fail-under=70
+        run: pytest tests/unit/ -v --cov=app --cov-fail-under=70

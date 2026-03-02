@@ -1,0 +1,60 @@
+{
+  "questions": {
+    "chief_complaint": {
+      "key": "chief_complaint",
+      "text": "What is your main health concern today?",
+      "follow_up_prompt": "Can you tell me more about what you are experiencing?",
+      "validation_type": "free_text"
+    },
+    "duration": {
+      "key": "duration_minutes",
+      "text": "How long have you been experiencing this?",
+      "validation_type": "duration"
+    },
+    "severity": {
+      "key": "severity",
+      "text": "On a scale of 1 to 10, how severe is it, with 10 being the worst?",
+      "validation_type": "integer_range",
+      "min": 1,
+      "max": 10
+    },
+    "age": {
+      "key": "age",
+      "text": "How old are you?",
+      "validation_type": "integer_range",
+      "min": 0,
+      "max": 120
+    },
+    "conditions": {
+      "key": "conditions",
+      "text": "Do you have any existing medical conditions, such as heart disease, diabetes, or asthma?",
+      "validation_type": "free_text_list"
+    }
+  },
+  "routing_messages": {
+    "escalate_911": "This sounds like a medical emergency. Connecting you to a nurse right now. Please stay on the line.",
+    "er_urgent": "This sounds urgent. Please go to an emergency room today. Do not wait.",
+    "walk_in": "I recommend visiting a walk-in clinic today. You can find one near you at 811.ca.",
+    "home_care": "This does not appear to be an emergency. Consider rest and over-the-counter remedies. If your symptoms worsen, call back or visit a walk-in clinic."
+  },
+  "l1_keywords": [
+    "chest pain",
+    "can't breathe",
+    "cannot breathe",
+    "heart attack",
+    "stroke",
+    "unconscious",
+    "not breathing",
+    "no pulse",
+    "severe bleeding",
+    "overdose"
+  ],
+  "crisis_keywords": [
+    "kill myself",
+    "suicide",
+    "want to die",
+    "end my life",
+    "hurt myself",
+    "self harm"
+  ]
+}

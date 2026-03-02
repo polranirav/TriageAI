@@ -1,9 +1,14 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy.ext.asyncio import create_async_engine  # noqa: F401
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
+
+# Import all models so Alembic detects schema changes via Base.metadata
+from app.models import Base  # noqa: F401 — registers all ORM models
+from app.models.system_event import SystemEventModel  # noqa: F401
+from app.models.triage_session import TriageSessionModel  # noqa: F401
 
 # Alembic Config object — provides access to .ini values
 config = context.config
@@ -12,9 +17,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import all models here so Alembic can detect schema changes
-# from app.models import Base  # uncomment in Sprint 2
-target_metadata = None  # replaced with Base.metadata in Sprint 2
+target_metadata = Base.metadata
 
 
 def get_database_url() -> str:

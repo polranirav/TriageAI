@@ -32,7 +32,34 @@
 ## Repository Structure
 
 ```
-triageai-ontario/
+TriageAI/
+├── CLAUDE.md                    # ← YOU ARE HERE — master context
+├── EXECUTION_GUIDE.md           # Step-by-step dev guide (auto vs. manual)
+├── docs/
+│   ├── README.md                # Navigation index for all docs
+│   ├── skills/                  # 📘 Skills files (load by topic)
+│   │   ├── ARCHITECTURE.md      # System diagram, schema, API surface
+│   │   ├── CONVENTIONS.md       # Coding standards, git workflow
+│   │   ├── VOICE_PIPELINE.md    # Twilio ↔ OpenAI audio bridge
+│   │   ├── CTAS_TRIAGE.md       # Classifier, state machine, routing
+│   │   ├── COMPLIANCE.md        # PIPEDA/PHIPA, zero-PII rules
+│   │   ├── FRONTEND.md          # Design system, components
+│   │   ├── DEPLOYMENT.md        # Docker, CI/CD, rollback
+│   │   ├── TESTING.md           # Test pyramid, P0 safety tests
+│   │   ├── API_REFERENCE.md     # Endpoint contracts, schemas
+│   │   ├── MONETIZATION.md      # Pricing tiers, Stripe billing
+│   │   └── ROADMAP.md           # Sprint plan, milestones
+│   └── research/                # 📚 Phase docs (deep reference)
+│       ├── Phase 1 ... .md      # Problem Discovery & Validation
+│       ├── Phase 2 ... .md      # Strategic Roadmap
+│       ├── Phase 3 ... .md      # Technical Architecture Blueprint
+│       ├── Phase 5 ... .md      # Design & Prototyping
+│       ├── Phase 6 ... .md      # Engineering Execution Plan
+│       ├── Phase 7 ... .md      # Testing & QA Architecture
+│       ├── Phase 8 ... .md      # Competitive Strategy
+│       ├── Phase 9 ... .md      # Monetization & Pricing
+│       ├── Phase 10 ... .md     # Launch & Operations
+│       └── skills of all.md     # MD file architecture meta-doc
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # FastAPI init, CORS, middleware
@@ -40,41 +67,21 @@ triageai-ontario/
 │   │   ├── database.py          # SQLAlchemy async engine + session
 │   │   ├── exceptions.py        # TriageAIError + error codes
 │   │   ├── voice/               # Feature 1: Voice intake
-│   │   │   ├── router.py        # POST /v1/voice, WS /v1/media-stream
-│   │   │   ├── media_bridge.py  # Twilio ↔ OpenAI WebSocket bridge
-│   │   │   └── audio_utils.py   # μ-law ↔ PCM16 conversion
 │   │   ├── triage/              # Feature 2: CTAS logic
-│   │   │   ├── router.py        # Triage API endpoints
-│   │   │   ├── state_machine.py # TriageSession state management
-│   │   │   ├── classifier.py    # classify_ctas(), get_routing_action()
-│   │   │   ├── prompts.py       # GPT-4o system prompt builder
-│   │   │   └── triage_config.json
 │   │   ├── routing/             # Feature 3: Routing decisions
 │   │   ├── escalation/          # Feature 4: Emergency transfer
-│   │   │   └── router.py        # POST /v1/escalate
 │   │   ├── logging/             # Feature 5: Session logger
 │   │   ├── admin/               # V2: Admin API (JWT-protected)
 │   │   └── models/              # SQLAlchemy ORM models
 │   ├── alembic/                 # DB migrations
 │   ├── tests/
-│   │   ├── unit/
-│   │   ├── integration/
-│   │   └── conftest.py
 │   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── requirements.txt
+│   └── pyproject.toml
 ├── frontend/
 │   ├── src/
-│   │   ├── components/ui/       # shadcn/ui primitives
-│   │   ├── components/features/ # Domain components
-│   │   ├── pages/               # Landing, Login, Dashboard/*
-│   │   ├── hooks/               # useAuth, useSessions
-│   │   └── lib/                 # api.ts, supabase.ts
-│   ├── tailwind.config.js       # Phase 5 design tokens
+│   ├── tailwind.config.js
 │   └── vite.config.ts
 ├── .github/workflows/
-│   ├── ci.yml
-│   └── deploy.yml
 ├── docker-compose.yml
 ├── Caddyfile
 └── .env.example
@@ -137,18 +144,25 @@ FF_ADMIN_DASHBOARD=false
 FF_ANALYTICS=false
 ```
 
-## Related Documentation
+## Documentation Index
 
-| File | Purpose |
-|:-----|:--------|
-| `ARCHITECTURE.md` | System components, data flow, module map |
-| `CONVENTIONS.md` | Coding standards, naming, git workflow |
-| `VOICE_PIPELINE.md` | Twilio + OpenAI audio bridge details |
-| `CTAS_TRIAGE.md` | Classification logic, state machine, routing |
-| `COMPLIANCE.md` | PIPEDA/PHIPA rules, zero-PII enforcement |
-| `FRONTEND.md` | Design system, components, screen specs |
-| `DEPLOYMENT.md` | Docker, CI/CD, AWS, rollback procedures |
-| `TESTING.md` | Test pyramid, coverage targets, P0 safety tests |
-| `API_REFERENCE.md` | Endpoint contracts, error codes, schemas |
-| `MONETIZATION.md` | Pricing tiers, Stripe billing, unit economics |
-| `ROADMAP.md` | Sprint plan, features, milestones |
+### 📘 Skills Files — `.claude/` (auto-discovered by Claude Code)
+
+| File | Purpose | Load When |
+|:-----|:--------|:----------|
+| `ARCHITECTURE.md` | System diagram, data flow, DB schema | Architecture decisions |
+| `CONVENTIONS.md` | Coding standards, error codes, git workflow | Writing any code |
+| `VOICE_PIPELINE.md` | Twilio ↔ OpenAI audio bridge | Working on voice/ module |
+| `CTAS_TRIAGE.md` | Classifier, state machine, routing logic | Working on triage/ module |
+| `COMPLIANCE.md` | PIPEDA/PHIPA rules, zero-PII enforcement | Any data/privacy question |
+| `FRONTEND.md` | Design system, components, screen specs | Working on frontend/ |
+| `DEPLOYMENT.md` | Docker, CI/CD, AWS, rollback procedures | Deploying or DevOps work |
+| `TESTING.md` | Test pyramid, P0 safety tests, coverage | Writing or reviewing tests |
+| `API_REFERENCE.md` | Endpoint contracts, error codes, schemas | API design or integration |
+| `MONETIZATION.md` | Pricing tiers, Stripe billing, economics | Billing features |
+| `ROADMAP.md` | Sprint plan, feature flags, milestones | Planning or prioritizing |
+
+### 📚 Research Docs — `docs/research/` (deep reference, rarely loaded)
+
+Original phase planning documents. Use when the skills files don't have enough detail.
+

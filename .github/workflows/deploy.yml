@@ -1,0 +1,85 @@
+name: Deploy
+
+# Runs on every push to main — after CI passes
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual trigger from GitHub UI
+
+# Required GitHub Secrets:
+#   EC2_HOST       — EC2 public IP or hostname (e.g. 3.98.x.x)
+#   EC2_SSH_KEY    — Private key matching the EC2 key pair (RSA PEM, no passphrase)
+#   EC2_USER       — SSH user (default: ec2-user for Amazon Linux, ubuntu for Ubuntu)
+#   ENV_FILE       — Full contents of production .env (copy .env.example, fill in real values)
+
+jobs:
+  deploy:
+    name: Deploy to EC2 (ca-central-1)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write production .env to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p /srv/triageai
+            cat > /srv/triageai/.env << 'ENVEOF'
+            ${{ secrets.ENV_FILE }}
+            ENVEOF
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /srv/triageai
+
+            # Pull latest code
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Build and start services
+            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Wait for API to be healthy
+            echo "Waiting for API health check..."
+            for i in $(seq 1 12); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "API healthy after ${i}x5s"
+                break
+              fi
+              echo "Attempt $i: status=$STATUS, retrying in 5s..."
+              sleep 5
+            done
+
+            # Run DB migrations
+            docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
+
+            # Clean up unused images to save disk
+            docker image prune -f
+
+            echo "Deploy complete."
+
+      - name: Smoke test production
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.EC2_HOST }}/health || echo "000")
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: health check returned $STATUS"
+            exit 1
+          fi
+          echo "PASS: production health check"

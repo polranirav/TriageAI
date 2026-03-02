@@ -12,6 +12,9 @@ services:
       - .env
     environment:
       - ENVIRONMENT=development
+      # Override Supabase URL to use local db container in dev (avoids IPv6 issues)
+      - DATABASE_URL=postgresql+asyncpg://triageai:triageai_dev@db:5432/triageai
+      - PYTHONPATH=/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       db:
@@ -21,7 +24,7 @@ services:
   db:
     image: postgres:15-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: triageai
       POSTGRES_PASSWORD: triageai_dev

@@ -1,5 +1,52 @@
-:80 {
-	# Local reverse proxy: simulates production Caddy setup
-	# Forwards all traffic to FastAPI on port 8000
-	reverse_proxy localhost:8000
+# TriageAI — Production Caddyfile
+# Auto-HTTPS via Let's Encrypt for triageai.ca
+
+{$DOMAIN:triageai.ca} {
+	# Frontend SPA
+	handle /dashboard* {
+		reverse_proxy frontend:3000
+	}
+	handle /login* {
+		reverse_proxy frontend:3000
+	}
+	handle / {
+		reverse_proxy frontend:3000
+	}
+
+	# Backend API
+	handle /v1/* {
+		reverse_proxy api:8000
+	}
+	handle /health {
+		reverse_proxy api:8000
+	}
+	handle /docs {
+		reverse_proxy api:8000
+	}
+
+	# WebSocket — Twilio media stream
+	handle /v1/media-stream {
+		reverse_proxy api:8000 {
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Gzip
+	encode gzip
+
+	# Logs
+	log {
+		output file /var/log/caddy/access.log
+		format json
+	}
 }

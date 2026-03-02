@@ -20,6 +20,8 @@ dependencies = [
     "structlog>=24.2.0",
     "sentry-sdk[fastapi]>=2.5.0",
     "slowapi>=0.1.9",
+    "python-multipart>=0.0.9",
+    "websockets>=12.0,<13.0",
 ]
 
 [project.optional-dependencies]
@@ -45,7 +47,10 @@ ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S", "B"]
+# GPT-4o system prompt is natural language — line-length limit does not apply
+"app/triage/prompts.py" = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests/unit"]
+# Smoke tests require a live server — run with: pytest tests/smoke/ -v BASE_URL=https://api.triageai.ca

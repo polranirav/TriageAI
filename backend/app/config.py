@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://user:pass@localhost:5432/triageai"
 
+    # Public base URL — used to build WebSocket URLs in TwiML responses
+    # In dev: http://localhost:8000, in prod: https://api.triageai.ca
+    BASE_URL: str = "http://localhost:8000"
+
     # Security
     SECRET_KEY: str = "change-me-in-production"  # noqa: S105
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"

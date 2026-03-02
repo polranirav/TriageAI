@@ -4,11 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.config import settings
 
-# Engine and session factory — wired fully in Sprint 2
+# Supabase requires SSL — detect by hostname
+_connect_args: dict = {}
+if "supabase" in settings.DATABASE_URL:
+    _connect_args["ssl"] = "require"
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.ENVIRONMENT == "development",
     pool_pre_ping=True,
+    connect_args=_connect_args,
 )
 
 async_session_factory = async_sessionmaker(
