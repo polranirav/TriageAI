@@ -4,10 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.config import settings
 
-# Supabase requires SSL — detect by hostname
+# Supabase requires SSL; transaction-mode pooler (port 6543) also requires
+# prepared statements to be disabled (Supavisor doesn't support them).
 _connect_args: dict = {}
 if "supabase" in settings.DATABASE_URL:
     _connect_args["ssl"] = "require"
+    if ":6543/" in settings.DATABASE_URL:
+        _connect_args["statement_cache_size"] = 0
 
 engine = create_async_engine(
     settings.DATABASE_URL,
