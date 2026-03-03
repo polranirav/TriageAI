@@ -1,3 +1,4 @@
+import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -33,10 +34,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("sentry_initialized", environment=settings.ENVIRONMENT)
 
+    from app.retention import retention_loop  # noqa: E402
+
+    retention_task = asyncio.create_task(retention_loop())
     logger.info("triageai_starting", environment=settings.ENVIRONMENT)
     yield
 
     # Shutdown
+    retention_task.cancel()
+    try:
+        await retention_task
+    except asyncio.CancelledError:
+        pass
     logger.info("triageai_stopping")
 
 
@@ -143,4 +152,6 @@ from app.admin.router import router as admin_router  # noqa: E402
 app.include_router(admin_auth_router, prefix="/v1/admin")
 app.include_router(admin_router, prefix="/v1/admin")
 
+from app.admin.settings import router as settings_router  # noqa: E402
 
+app.include_router(settings_router, prefix="/v1/admin")

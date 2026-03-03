@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Sentry
     SENTRY_DSN: str | None = None
 
+    # Data retention (PIPEDA/PHIPA) — sessions deleted after this many days
+    RETENTION_DAYS: int = 90
+
     # Feature flags
     FF_MULTILINGUAL: bool = False
     FF_ADMIN_DASHBOARD: bool = False
