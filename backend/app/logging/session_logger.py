@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -66,7 +66,7 @@ async def complete_session(
                 routing_action=routing_action,
                 escalated=escalated,
                 questions_completed=questions_completed,
-                ended_at=datetime.utcnow(),
+                ended_at=datetime.now(UTC),
             )
         )
         await db.execute(stmt)

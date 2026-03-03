@@ -4,7 +4,7 @@ Admin dashboard API — analytics and session management.
 All endpoints require JWT authentication via the require_auth dependency.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import structlog
@@ -119,7 +119,7 @@ async def analytics_summary(
     db: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> AnalyticsSummary:
     """Dashboard stat cards — total calls, escalation rate, avg duration."""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Total calls in period
     total_q = select(func.count()).select_from(TriageSessionModel).where(
@@ -155,7 +155,7 @@ async def analytics_summary(
         avg_duration_sec=round(avg_dur, 1) if avg_dur else None,
         non_emergency_pct=round(non_emerg / total, 3) if total > 0 else 0.0,
         period_start=since.isoformat(),
-        period_end=datetime.utcnow().isoformat(),
+        period_end=datetime.now(UTC).isoformat(),
     )
 
 
@@ -165,7 +165,7 @@ async def ctas_distribution(
     db: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> CTASDistribution:
     """CTAS donut chart data — count and percentage per level."""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     stmt = (
         select(
