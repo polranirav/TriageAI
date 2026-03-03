@@ -11,6 +11,7 @@ on:
 #   EC2_SSH_KEY    — Private key matching the EC2 key pair (RSA PEM, no passphrase)
 #   EC2_USER       — SSH user (default: ec2-user for Amazon Linux, ubuntu for Ubuntu)
 #   ENV_FILE       — Full contents of production .env (copy .env.example, fill in real values)
+#   DOMAIN         — Production domain name (e.g. triageai.ca) — used for smoke test
 
 jobs:
   deploy:
@@ -76,7 +77,7 @@ jobs:
       - name: Smoke test production
         run: |
           sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.EC2_HOST }}/health || echo "000")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.DOMAIN }}/health || echo "000")
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "FAIL: health check returned $STATUS"
