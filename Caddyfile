@@ -2,19 +2,32 @@
 # Auto-HTTPS via Let's Encrypt
 
 {$DOMAIN:triageai.ca} {
-	# Backend API + WebSocket — all /v1/* and /health go to the API container.
-	# Caddy v2 automatically detects and proxies WebSocket upgrade requests.
+	# WebSocket upgrade requests for Twilio media stream
+	# Must be matched explicitly — Caddy strips hop-by-hop headers by default
+	@websocket {
+		path /v1/media-stream
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @websocket {
+		reverse_proxy api:8000 {
+			transport http {
+				versions 1.1
+			}
+			header_up Connection "Upgrade"
+			header_up Upgrade "websocket"
+		}
+	}
+
+	# Backend API (all other /v1/* routes)
 	handle /v1/* {
 		reverse_proxy api:8000
 	}
 	handle /health {
 		reverse_proxy api:8000
 	}
-	handle /docs {
-		reverse_proxy api:8000
-	}
 
-	# Frontend SPA — catch-all (everything else goes to frontend)
+	# Frontend SPA — catch-all
 	handle {
 		reverse_proxy frontend:3000
 	}
@@ -28,10 +41,8 @@
 		-Server
 	}
 
-	# Gzip
 	encode gzip
 
-	# Logs
 	log {
 		output file /var/log/caddy/access.log
 		format json
