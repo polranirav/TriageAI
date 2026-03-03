@@ -1,19 +1,9 @@
 # TriageAI — Production Caddyfile
-# Auto-HTTPS via Let's Encrypt for triageai.ca
+# Auto-HTTPS via Let's Encrypt
 
 {$DOMAIN:triageai.ca} {
-	# Frontend SPA
-	handle /dashboard* {
-		reverse_proxy frontend:3000
-	}
-	handle /login* {
-		reverse_proxy frontend:3000
-	}
-	handle / {
-		reverse_proxy frontend:3000
-	}
-
-	# Backend API
+	# Backend API + WebSocket — all /v1/* and /health go to the API container.
+	# Caddy v2 automatically detects and proxies WebSocket upgrade requests.
 	handle /v1/* {
 		reverse_proxy api:8000
 	}
@@ -24,12 +14,9 @@
 		reverse_proxy api:8000
 	}
 
-	# WebSocket — Twilio media stream
-	handle /v1/media-stream {
-		reverse_proxy api:8000 {
-			header_up Connection {>Connection}
-			header_up Upgrade {>Upgrade}
-		}
+	# Frontend SPA — catch-all (everything else goes to frontend)
+	handle {
+		reverse_proxy frontend:3000
 	}
 
 	# Security headers
