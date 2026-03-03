@@ -13,6 +13,7 @@ Call flow:
 import asyncio
 import base64
 import json
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -50,9 +51,10 @@ async def handle_media_stream(twilio_ws: WebSocket) -> None:
     # Mutable state shared between the two concurrent tasks.
     # triage_outcome is populated by _handle_triage_submission.
     shared: dict[str, Any] = {
-        "session": None,        # TriageSession (in-memory state machine)
-        "stream_sid": None,     # Twilio stream identifier
-        "triage_outcome": None, # dict set when GPT-4o calls submit_triage
+        "session": None,          # TriageSession (in-memory state machine)
+        "stream_sid": None,       # Twilio stream identifier
+        "triage_outcome": None,   # dict set when GPT-4o calls submit_triage
+        "call_start_time": None,  # datetime set on Twilio start event
     }
 
     openai_ws = None
@@ -162,6 +164,7 @@ async def _receive_from_twilio(
             stream_sid: str = data["start"]["streamSid"]
             shared["session"] = TriageSession(call_sid)
             shared["stream_sid"] = stream_sid
+            shared["call_start_time"] = datetime.now(UTC)
             log.info("call_started", call_sid=call_sid, stream_sid=stream_sid)
 
         elif event == "media":
@@ -307,6 +310,9 @@ async def _finalize_session(shared: dict, log: Any) -> None:
 
     outcome: dict | None = shared.get("triage_outcome")
 
+    start_time = shared.get("call_start_time")
+    duration_sec = int((datetime.now(UTC) - start_time).total_seconds()) if start_time else None
+
     try:
         async with async_session_factory() as db:
             await complete_session(
@@ -315,6 +321,7 @@ async def _finalize_session(shared: dict, log: Any) -> None:
                 routing_action=outcome["routing_action"] if outcome else None,
                 escalated=outcome["early_escalation"] if outcome else False,
                 questions_completed=session.questions_completed,
+                duration_sec=duration_sec,
                 db=db,
             )
     except Exception:

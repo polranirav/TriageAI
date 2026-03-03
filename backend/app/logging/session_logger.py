@@ -49,6 +49,7 @@ async def complete_session(
     escalated: bool,
     questions_completed: int,
     db: AsyncSession,
+    duration_sec: int | None = None,
 ) -> None:
     """
     Write the final triage outcome to the triage_sessions record and
@@ -66,6 +67,7 @@ async def complete_session(
                 routing_action=routing_action,
                 escalated=escalated,
                 questions_completed=questions_completed,
+                duration_sec=duration_sec,
                 ended_at=datetime.now(UTC),
             )
         )
