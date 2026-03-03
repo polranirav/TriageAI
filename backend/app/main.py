@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -52,10 +53,11 @@ app = FastAPI(
 app.state.limiter = limiter
 
 # CORS — locked to localhost in dev, triageai.ca in prod
+_domain = os.environ.get("DOMAIN", "triageai.ca")
 _allowed_origins = (
-    ["http://localhost:3000", "http://127.0.0.1:3000"]
+    ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
     if settings.ENVIRONMENT == "development"
-    else ["https://triageai.ca"]
+    else [f"https://{_domain}", f"https://www.{_domain}"]
 )
 
 app.add_middleware(
@@ -135,8 +137,10 @@ from app.escalation.router import router as escalation_router  # noqa: E402
 
 app.include_router(escalation_router, prefix="/v1")
 
+from app.admin.router import auth_router as admin_auth_router  # noqa: E402
 from app.admin.router import router as admin_router  # noqa: E402
 
+app.include_router(admin_auth_router, prefix="/v1/admin")
 app.include_router(admin_router, prefix="/v1/admin")
 
 

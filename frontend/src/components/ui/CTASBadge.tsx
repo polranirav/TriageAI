@@ -1,34 +1,63 @@
 import { cn } from "../../lib/utils"
-import { AlertTriangle, Circle } from "lucide-react"
 
 export type CTASLevel = "L1" | "L2" | "L3" | "L4" | "L5"
 
-interface CTASBadgeProps {
-  level: CTASLevel
-  className?: string
-  showLabel?: boolean
+const CTAS_CONFIG: Record<CTASLevel, {
+  label: string
+  solidColor: string
+  bgColor: string
+  borderColor: string
+  pulse?: boolean
+}> = {
+  L1: { label: "Resuscitation", solidColor: "#FF2D2D", bgColor: "#FF2D2D1A", borderColor: "#FF2D2D40", pulse: true },
+  L2: { label: "Emergent", solidColor: "#FF6B00", bgColor: "#FF6B001A", borderColor: "#FF6B0040" },
+  L3: { label: "Urgent", solidColor: "#F0B429", bgColor: "#F0B4291A", borderColor: "#F0B42940" },
+  L4: { label: "Less Urgent", solidColor: "#3B82F6", bgColor: "#3B82F61A", borderColor: "#3B82F640" },
+  L5: { label: "Non-Urgent", solidColor: "#10B981", bgColor: "#10B9811A", borderColor: "#10B98140" },
 }
 
-export function CTASBadge({ level, className, showLabel = true }: CTASBadgeProps) {
-  const config = {
-    L1: { bg: "bg-[#450a0a]", text: "text-[#ef4444]", border: "border-[#ef4444]/30", icon: AlertTriangle, label: "Resuscitation" },
-    L2: { bg: "bg-[#431407]", text: "text-[#f97316]", border: "border-[#f97316]/30", icon: AlertTriangle, label: "Emergent" },
-    L3: { bg: "bg-[#451a03]", text: "text-[#f59e0b]", border: "border-[#f59e0b]/30", icon: Circle, label: "Urgent" },
-    L4: { bg: "bg-[#042f2e]", text: "text-[#14b8a6]", border: "border-[#14b8a6]/30", icon: Circle, label: "Semi-Urgent" },
-    L5: { bg: "bg-[#052e16]", text: "text-[#22c55e]", border: "border-[#22c55e]/30", icon: Circle, label: "Non-Urgent" },
+interface CTASBadgeProps {
+  level: CTASLevel
+  size?: "sm" | "md" | "lg"
+  showLabel?: boolean
+  className?: string
+}
+
+export function CTASBadge({ level, size = "md", showLabel = false, className }: CTASBadgeProps) {
+  const config = CTAS_CONFIG[level]
+
+  const sizeClasses = {
+    sm: "text-[10px] px-1.5 py-0.5 gap-1",
+    md: "text-[12px] px-2 py-1 gap-1.5",
+    lg: "text-[14px] px-3 py-1.5 gap-2",
   }
 
-  const { bg, text, border, icon: Icon, label } = config[level]
-  const isCritical = level === "L1" || level === "L2"
-
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-[0.06em] border",
-      bg, text, border, className,
-      isCritical ? "animate-critical-pulse border-[#ef4444] shadow-sm shadow-red-900/50" : ""
-    )}>
-      <Icon className={cn("w-2.5 h-2.5", isCritical ? "fill-current" : "")} strokeWidth={3} />
-      {showLabel ? `${level} · ${label}` : level}
+    <span
+      className={cn(
+        "inline-flex items-center font-semibold rounded-md whitespace-nowrap",
+        sizeClasses[size],
+        config.pulse && "ctas-l1-pulse",
+        className,
+      )}
+      style={{
+        backgroundColor: config.bgColor,
+        border: `1px solid ${config.borderColor}`,
+        color: config.solidColor,
+      }}
+    >
+      {level}
+      {showLabel && (
+        <span className="font-normal opacity-80">
+          {config.label}
+        </span>
+      )}
     </span>
   )
+}
+
+/** Return the CTAS color config for programmatic use (charts, etc.) */
+export function getCTASColor(level: number | string) {
+  const key = typeof level === "number" ? `L${level}` : level
+  return CTAS_CONFIG[key as CTASLevel] ?? CTAS_CONFIG.L5
 }

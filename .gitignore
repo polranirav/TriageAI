@@ -1,3 +1,9 @@
+# Claude Code internal files
+.claude/
+
+# MCP server configs (may contain secrets)
+mcp-servers/
+
 # Environment
 .env
 .env.local

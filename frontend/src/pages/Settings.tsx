@@ -32,7 +32,7 @@ export function Settings() {
             <label className="block">
               <span className="text-[13px] text-neutral-400">On-call Number</span>
               <input
-                defaultValue="+1 (647) 555-0199"
+                defaultValue="+1 (226) 212-8564"
                 className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
               />
             </label>

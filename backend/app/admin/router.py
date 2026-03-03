@@ -6,6 +6,7 @@ All endpoints require JWT authentication via the require_auth dependency.
 
 from datetime import datetime, timedelta
 
+import jwt
 import structlog
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -13,12 +14,47 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.auth import require_auth
+from app.config import settings
 from app.database import get_session
-from app.exceptions import TRIAGE_SESSION_NOT_FOUND, TriageAIError
+from app.exceptions import TRIAGE_SESSION_NOT_FOUND, UNAUTHORIZED, TriageAIError
 from app.models.system_event import SystemEventModel
 from app.models.triage_session import TriageSessionModel
 
 logger = structlog.get_logger()
+
+# ── Unauthenticated: login ────────────────────────────────────────────────────
+
+auth_router = APIRouter(tags=["admin-auth"])
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"  # noqa: S105
+
+
+@auth_router.post("/login", response_model=TokenResponse)
+async def admin_login(body: LoginRequest) -> TokenResponse:
+    """Return a signed JWT for the admin dashboard. Validates email + password from env."""
+    if body.email != settings.ADMIN_EMAIL or body.password != settings.ADMIN_PASSWORD:
+        raise TriageAIError(
+            code=UNAUTHORIZED,
+            message="Invalid admin credentials.",
+            status=401,
+        )
+    token = jwt.encode(
+        {"sub": "admin", "email": body.email, "role": "admin", "aud": "authenticated"},
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
+    return TokenResponse(access_token=token)
+
+
+# ── Authenticated: analytics + sessions ──────────────────────────────────────
 
 router = APIRouter(tags=["admin"], dependencies=[Depends(require_auth)])
 

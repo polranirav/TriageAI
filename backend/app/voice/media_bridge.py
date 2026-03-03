@@ -34,7 +34,7 @@ from app.voice.audio_utils import (
     ulaw_to_pcm16,
 )
 
-_OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview"
+_OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview"
 
 logger = structlog.get_logger()
 

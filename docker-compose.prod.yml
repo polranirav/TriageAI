@@ -11,6 +11,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - PYTHONPATH=/app
+      - DOMAIN=${DOMAIN:-triageai.ca}
     depends_on:
       db:
         condition: service_healthy

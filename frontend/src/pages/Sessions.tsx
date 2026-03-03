@@ -1,119 +1,230 @@
-import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Search } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import { api, type SessionSummary } from "../lib/api"
 import { CTASBadge, type CTASLevel } from "../components/ui/CTASBadge"
+import { EmptyState } from "../components/ui/EmptyState"
+import { EcgLoader } from "../components/ui/EcgLoader"
 import { cn } from "../lib/utils"
-
-const sessions: {
-  id: string
-  caller: string
-  level: CTASLevel
-  routing: string
-  duration: string
-  started: string
-}[] = [
-  { id: "CA-81134", caller: "+1 (647) 555-0191", level: "L1", routing: "Escalated to Nurse", duration: "03:12", started: "10:02 AM" },
-  { id: "CA-81128", caller: "+1 (416) 555-0142", level: "L3", routing: "ER Urgent", duration: "02:28", started: "9:54 AM" },
-  { id: "CA-81121", caller: "+1 (905) 555-0166", level: "L5", routing: "Home Care", duration: "01:47", started: "9:42 AM" },
-  { id: "CA-81120", caller: "+1 (437) 555-0138", level: "L4", routing: "Walk-In Clinic", duration: "02:11", started: "9:35 AM" },
-  { id: "CA-81111", caller: "+1 (519) 555-0121", level: "L2", routing: "Nurse Callback", duration: "03:44", started: "9:18 AM" },
-]
-
-const levelFilters: Array<"ALL" | CTASLevel> = ["ALL", "L1", "L2", "L3", "L4", "L5"]
+import {
+  Search, Download, ChevronRight, ChevronLeft, AlertTriangle,
+  List,
+} from "lucide-react"
 
 export function Sessions() {
-  const navigate = useNavigate()
-  const [query, setQuery] = useState("")
-  const [selectedLevel, setSelectedLevel] = useState<"ALL" | CTASLevel>("ALL")
+  const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [ctasFilter, setCtasFilter] = useState<number | undefined>()
+  const [escalatedFilter, setEscalatedFilter] = useState<boolean | undefined>()
+  const [search, setSearch] = useState("")
+  const perPage = 25
 
-  const filtered = useMemo(() => {
-    return sessions.filter((session) => {
-      const matchesLevel = selectedLevel === "ALL" || session.level === selectedLevel
-      const matchesQuery =
-        query.trim().length === 0 ||
-        session.id.toLowerCase().includes(query.toLowerCase()) ||
-        session.caller.toLowerCase().includes(query.toLowerCase()) ||
-        session.routing.toLowerCase().includes(query.toLowerCase())
-      return matchesLevel && matchesQuery
-    })
-  }, [query, selectedLevel])
+  useEffect(() => {
+    setLoading(true)
+    api
+      .listSessions({
+        page,
+        per_page: perPage,
+        ctas_level: ctasFilter,
+        escalated: escalatedFilter,
+      })
+      .then((res) => {
+        setSessions(res.sessions)
+        setTotal(res.total)
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false))
+  }, [page, ctasFilter, escalatedFilter])
+
+  const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="p-4 md:p-8 max-w-[1320px] mx-auto animate-fade-in">
-      <section className="panel p-5 md:p-6 mb-6">
-        <p className="text-[11px] uppercase tracking-[0.12em] text-primary-400 mb-1">Operations</p>
-        <h1 className="text-h1">Call Sessions</h1>
-        <p className="text-body-sm text-neutral-500 mt-1">Review active triage outcomes and routing decisions.</p>
-      </section>
+    <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto animate-fade-in space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-page-title text-text-primary">All Sessions</h1>
+          <p className="text-body text-text-secondary mt-1">
+            Complete call history — review and audit triage outcomes
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <button className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors">
+            <Download className="w-3.5 h-3.5" />
+            Export CSV
+          </button>
+          <button className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors">
+            <Download className="w-3.5 h-3.5" />
+            Export PDF
+          </button>
+        </div>
+      </div>
 
-      <section className="panel p-4 md:p-5 mb-4">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search session ID, phone, or routing action..."
-              className="w-full rounded-lg border border-neutral-700 bg-neutral-900 pl-9 pr-3 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-            />
+      {/* Filters Bar */}
+      <div className="panel p-3 flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <input
+            type="text"
+            placeholder="Search sessions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-surface border border-border-default rounded-md py-2 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary-500 transition-colors"
+          />
+        </div>
+
+        {/* CTAS Filter */}
+        <select
+          value={ctasFilter || ""}
+          onChange={(e) => {
+            setCtasFilter(e.target.value ? Number(e.target.value) : undefined)
+            setPage(1)
+          }}
+          className="bg-surface border border-border-default rounded-md py-2 px-3 text-[13px] text-text-primary focus:outline-none focus:border-primary-500"
+        >
+          <option value="">All CTAS</option>
+          <option value="1">L1 — Resuscitation</option>
+          <option value="2">L2 — Emergent</option>
+          <option value="3">L3 — Urgent</option>
+          <option value="4">L4 — Less Urgent</option>
+          <option value="5">L5 — Non-Urgent</option>
+        </select>
+
+        {/* Escalation Filter */}
+        <select
+          value={escalatedFilter === undefined ? "" : String(escalatedFilter)}
+          onChange={(e) => {
+            setEscalatedFilter(e.target.value === "" ? undefined : e.target.value === "true")
+            setPage(1)
+          }}
+          className="bg-surface border border-border-default rounded-md py-2 px-3 text-[13px] text-text-primary focus:outline-none focus:border-primary-500"
+        >
+          <option value="">All Escalation</option>
+          <option value="true">Escalated Only</option>
+          <option value="false">Non-Escalated</option>
+        </select>
+      </div>
+
+      {/* Sessions Table */}
+      {loading ? (
+        <EcgLoader />
+      ) : sessions.length === 0 ? (
+        <EmptyState
+          icon={List}
+          title="No sessions found"
+          description="No triage calls match your filters. Try adjusting the criteria."
+        />
+      ) : (
+        <div className="panel overflow-hidden">
+          {/* Table Header */}
+          <div className="hidden md:grid grid-cols-[1fr_80px_1fr_80px_100px_40px] gap-4 px-5 py-3 border-b border-border-subtle text-[11px] uppercase tracking-wider text-text-muted font-semibold">
+            <span>Time</span>
+            <span>CTAS</span>
+            <span>Routing Decision</span>
+            <span>Duration</span>
+            <span>Escalated</span>
+            <span />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {levelFilters.map((level) => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => setSelectedLevel(level)}
+
+          {/* Table Rows */}
+          {sessions.map((s) => {
+            const time = new Date(s.started_at)
+            const dateStr = time.toLocaleDateString("en-CA", {
+              weekday: "short", day: "numeric", month: "short",
+            })
+            const timeStr = time.toLocaleTimeString("en-CA", {
+              hour: "2-digit", minute: "2-digit",
+            })
+            const durMin = s.duration_sec ? Math.floor(s.duration_sec / 60) : 0
+            const durSec = s.duration_sec ? s.duration_sec % 60 : 0
+
+            return (
+              <Link
+                key={s.id}
+                to={`/dashboard/sessions/${s.call_sid}`}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-[12px] border transition-colors",
-                  selectedLevel === level
-                    ? "bg-primary-900/35 border-primary-700/40 text-primary-300"
-                    : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-neutral-200",
+                  "grid grid-cols-1 md:grid-cols-[1fr_80px_1fr_80px_100px_40px] gap-2 md:gap-4 px-5 py-3.5 border-b border-border-subtle hover:bg-card-hover transition-colors group",
+                  s.escalated && "row-escalated",
                 )}
               >
-                {level}
+                {/* Time */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-mono text-text-muted">{dateStr}</span>
+                  <span className="text-[13px] font-mono text-text-secondary">{timeStr}</span>
+                </div>
+
+                {/* CTAS */}
+                <div className="flex items-center">
+                  {s.ctas_level ? (
+                    <CTASBadge level={`L${s.ctas_level}` as CTASLevel} size="sm" />
+                  ) : (
+                    <span className="text-[12px] text-text-muted">—</span>
+                  )}
+                </div>
+
+                {/* Routing */}
+                <div className="flex items-center">
+                  <span className="text-[13px] text-text-secondary truncate">
+                    {s.routing_action || "Pending assessment"}
+                  </span>
+                </div>
+
+                {/* Duration */}
+                <div className="flex items-center">
+                  <span className="mono-data">
+                    {s.duration_sec ? `${durMin}:${durSec.toString().padStart(2, "0")}` : "—"}
+                  </span>
+                </div>
+
+                {/* Escalated */}
+                <div className="flex items-center">
+                  {s.escalated ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#FF6B001A] border border-[#FF6B0040] text-[#FF6B00]">
+                      <AlertTriangle className="w-3 h-3" />
+                      Escalated
+                    </span>
+                  ) : (
+                    <span className="text-[12px] text-text-muted">—</span>
+                  )}
+                </div>
+
+                {/* Arrow */}
+                <div className="flex items-center justify-end">
+                  <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-500 transition-colors" />
+                </div>
+              </Link>
+            )
+          })}
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-border-subtle">
+            <span className="text-[12px] text-text-muted">
+              Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} of {total} sessions
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page <= 1}
+                className="inline-flex items-center gap-1 text-[12px] text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed border border-border-default rounded-md px-3 py-1.5 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Prev
               </button>
-            ))}
+              <span className="text-[12px] text-text-muted font-mono">{page} / {totalPages || 1}</span>
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page >= totalPages}
+                className="inline-flex items-center gap-1 text-[12px] text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed border border-border-default rounded-md px-3 py-1.5 transition-colors"
+              >
+                Next
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      </section>
-
-      <section className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
-            <thead className="bg-neutral-900/80 border-b border-neutral-800">
-              <tr>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">Session ID</th>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">Caller</th>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">CTAS</th>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">Routing</th>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">Duration</th>
-                <th className="text-left text-[11px] uppercase tracking-[0.08em] text-neutral-500 px-4 py-3">Started</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((session) => (
-                <tr 
-                  key={session.id} 
-                  onClick={() => navigate(`/dashboard/sessions/${session.id}`)}
-                  className="border-b border-neutral-800/70 hover:bg-neutral-900/70 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 text-sm text-neutral-100 font-mono">{session.id}</td>
-                  <td className="px-4 py-3 text-sm text-neutral-300">{session.caller}</td>
-                  <td className="px-4 py-3">
-                    <CTASBadge level={session.level} showLabel={false} />
-                  </td>
-                  <td className="px-4 py-3 text-sm text-neutral-300">{session.routing}</td>
-                  <td className="px-4 py-3 text-sm text-neutral-300 font-mono">{session.duration}</td>
-                  <td className="px-4 py-3 text-sm text-neutral-500">{session.started}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="px-4 py-8 text-center text-sm text-neutral-500">No sessions match your current filters.</div>
-          )}
-        </div>
-      </section>
+      )}
     </div>
   )
 }

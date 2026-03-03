@@ -6,6 +6,11 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+
+# Build with production API URL — calls go to same domain via Caddy reverse proxy
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # ── Production: serve with Caddy ──────────────────────────────────────────────

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production"  # noqa: S105
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
 
+    # Admin dashboard credentials
+    ADMIN_EMAIL: str = "admin@triageai.ca"
+    ADMIN_PASSWORD: str = "change-me-in-production"  # noqa: S105
+
     # Sentry
     SENTRY_DSN: str | None = None
 
