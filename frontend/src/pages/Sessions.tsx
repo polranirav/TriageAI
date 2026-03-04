@@ -56,7 +56,7 @@ export function Sessions() {
         </div>
         <div className="hidden md:flex items-center gap-2">
           <button
-            onClick={() => api.exportSessionsCSV(30).catch(() => {})}
+            onClick={() => alert("CSV export coming soon")}
             className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
@@ -176,9 +176,20 @@ export function Sessions() {
 
                 {/* Routing */}
                 <div className="flex items-center">
-                  <span className="text-[13px] text-text-secondary truncate">
-                    {s.routing_action || "Pending assessment"}
-                  </span>
+                  {s.routing_action ? (
+                    <span className={cn(
+                      "text-[12px] font-medium px-2 py-0.5 rounded-md truncate",
+                      s.routing_action === "incomplete"
+                        ? "bg-yellow-500/10 border border-yellow-500/30 text-yellow-400"
+                        : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                    )}>
+                      {s.routing_action === "incomplete"
+                        ? "Incomplete"
+                        : s.routing_action.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                    </span>
+                  ) : (
+                    <span className="text-[12px] text-text-muted italic">No data</span>
+                  )}
                 </div>
 
                 {/* Duration */}

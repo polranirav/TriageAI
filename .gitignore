@@ -1,17 +1,13 @@
-# Claude Code internal files
-.claude/
-
-# MCP server configs (may contain secrets)
-mcp-servers/
-
-# Environment
+# ─── Environment & Secrets ───────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# Python
+# ─── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
+*.pyo
 *.egg-info/
 *.egg
 .venv/
@@ -20,24 +16,42 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 
-# Node
+# ─── Node ────────────────────────────────────────────────────────────────────
 node_modules/
 dist/
 .next/
+.cache/
 
-# IDE
+# ─── IDE ─────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.settings/
 
-# macOS
+# ─── macOS ───────────────────────────────────────────────────────────────────
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
 
-# Docker
+# ─── Docker ──────────────────────────────────────────────────────────────────
 *.log
 
-# Alembic — don't ignore versions, but ignore local temp files
+# ─── AI Assistant Files ──────────────────────────────────────────────────────
+.claude/
+.gemini/
+.agents/
+mcp-servers/
+
+# ─── Build Artifacts ─────────────────────────────────────────────────────────
+*.egg-info/
+backend/static/

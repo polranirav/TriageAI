@@ -380,7 +380,7 @@ async def _finalize_session(shared: dict, log: Any) -> None:
             await complete_session(
                 call_sid=session.call_sid,
                 ctas_level=outcome["ctas_level"] if outcome else None,
-                routing_action=outcome["routing_action"] if outcome else None,
+                routing_action=outcome["routing_action"] if outcome else "incomplete",
                 escalated=outcome["early_escalation"] if outcome else False,
                 questions_completed=session.questions_completed,
                 duration_sec=duration_sec,
