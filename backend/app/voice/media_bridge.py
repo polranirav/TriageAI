@@ -126,13 +126,21 @@ async def _configure_openai_session(openai_ws: Any) -> None:
         json.dumps({
             "type": "session.update",
             "session": {
+                "modalities": ["audio", "text"],
                 "voice": "alloy",
                 "instructions": build_system_prompt(),
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
-                "turn_detection": {"type": "server_vad"},
+                "turn_detection": {
+                    "type": "server_vad",
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 500,
+                    "silence_duration_ms": 800,
+                },
                 "tools": [SUBMIT_TRIAGE_FUNCTION],
                 "tool_choice": "auto",
+                "temperature": 0.6,
+                "max_response_output_tokens": 150,
             },
         })
     )
