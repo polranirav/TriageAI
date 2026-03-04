@@ -1,4 +1,4 @@
-# 🏥 TriageAI
+# TriageAI
 
 **AI-powered medical call triage & escalation system for Ontario, Canada.**
 
@@ -12,90 +12,92 @@
 
 ---
 
-## 🎯 The Problem
+## The Problem
 
 **2.3 million Ontarians** don't have a family doctor. Many rely on walk-in clinics, ER visits, or the overloaded 811 line — costing the healthcare system billions and delaying care for patients who need it most.
 
-## 💡 The Solution
+## The Solution
 
 TriageAI automates the first point of contact. A patient calls a phone number, speaks to an AI triage nurse, and is routed to the appropriate level of care — **in under 2 minutes**, 24/7.
 
 ### How It Works
 
 ```
-📞 Patient dials the triage line
+Patient dials the triage line
      ↓
-🤖 AI greets and asks 5 CTAS-based questions
+AI greets, reads PIPEDA consent, and asks 5 CTAS-based questions
      ↓
-🧠 CTAS classifier determines urgency level (L1–L5)
+CTAS classifier determines urgency level (L1–L5)
      ↓
-🚑 L1/L2 → Warm-transfer to human nurse (escalation)
-🏥 L3    → Directed to ER / urgent care
-🏪 L4    → Directed to walk-in clinic
-🏠 L5    → Home care advice given
+L1/L2  →  Warm-transfer to human nurse (Twilio Conference bridge)
+L3     →  Directed to ER / urgent care
+L4     →  Directed to walk-in clinic
+L5     →  Home care guidance
 ```
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
-|:--------|:------------|
+|---------|------------|
 | **Voice Triage** | Natural AI conversation via Twilio + OpenAI Realtime API |
 | **CTAS Classification** | Deterministic 5-level Canadian Triage & Acuity Scale |
-| **Emergency Escalation** | Auto-detects emergencies (chest pain, stroke, etc.) and warm-transfers to a nurse |
+| **Emergency Escalation** | Auto-detects chest pain, stroke, etc. — warm-transfers to a nurse via Twilio Conference |
 | **Live Dashboard** | Real-time monitoring of active calls, CTAS distribution, escalation rates |
 | **Session History** | Full audit trail of every triage call with outcomes and durations |
-| **Analytics** | Daily/weekly/monthly call volume, CTAS trends, average handle time |
-| **PIPEDA Compliant** | Zero PII storage, auto-deletion after 90 days, consent-first design |
-| **Admin Auth** | Secure login with JWT-based session management |
+| **Analytics** | Daily/weekly call volume, CTAS trends, call volume heatmap, routing breakdown |
+| **PIPEDA/PHIPA Compliant** | Zero PII storage, auto-deletion after 90 days, consent-first design |
+| **Admin Auth** | JWT-based login (dev bypass mode for local development) |
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│   Patient    │────▶│    Twilio     │────▶│   FastAPI        │
-│   (Phone)    │◀────│  (Voice/WS)  │◀────│   Backend        │
-└─────────────┘     └──────────────┘     │                   │
-                                          │  ┌─────────────┐ │
-                                          │  │  OpenAI      │ │
-                                          │  │  Realtime    │ │
-                                          │  │  API (WS)    │ │
-                                          │  └─────────────┘ │
-                                          │                   │
-                                          │  ┌─────────────┐ │
-                                          │  │  PostgreSQL  │ │
-                                          │  │  Database    │ │
-                                          │  └─────────────┘ │
-                                          └───────────────────┘
-                                                   │
-                                          ┌───────────────────┐
-                                          │  React Dashboard   │
-                                          │  (Admin Panel)     │
-                                          └───────────────────┘
+┌─────────────┐     ┌──────────────┐     ┌─────────────────────┐
+│   Patient    │────▶│    Twilio     │────▶│   FastAPI Backend    │
+│   (Phone)    │◀────│  (Voice/WS)  │◀────│   (AWS EC2)          │
+└─────────────┘     └──────────────┘     │                      │
+                                         │  ┌──────────────────┐ │
+                                         │  │  OpenAI Realtime  │ │
+                                         │  │  API (WebSocket)  │ │
+                                         │  └──────────────────┘ │
+                                         │                        │
+                                         │  ┌──────────────────┐ │
+                                         │  │    PostgreSQL     │ │
+                                         │  │    (Supabase)     │ │
+                                         │  └──────────────────┘ │
+                                         └────────────────────────┘
+                                                    │
+                                         ┌────────────────────────┐
+                                         │   React Admin Dashboard │
+                                         │   (served via Caddy)    │
+                                         └────────────────────────┘
 ```
 
-## 🛠️ Tech Stack
+---
+
+## Tech Stack
 
 | Layer | Technology |
-|:------|:-----------|
+|-------|-----------|
 | **Backend** | Python 3.11 · FastAPI · SQLAlchemy 2.0 (async) · Pydantic v2 |
-| **Database** | PostgreSQL 15 · Alembic migrations |
+| **Database** | Supabase (PostgreSQL) · Alembic migrations |
 | **Voice** | Twilio Programmable Voice + Media Streams (WebSocket) |
-| **AI Engine** | OpenAI Realtime API (`gpt-4o-mini-realtime-preview`) |
+| **AI Engine** | OpenAI Realtime API (`gpt-4o-realtime-preview`) |
 | **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS |
-| **Deployment** | Docker · Docker Compose · Caddy (reverse proxy + TLS) |
-| **CI/CD** | GitHub Actions |
+| **Deployment** | Docker · Docker Compose · AWS EC2 (`ca-central-1`) · Caddy (TLS + reverse proxy) |
+| **CI/CD** | GitHub Actions — lint, test, SSH deploy on every push to `main` |
+| **Monitoring** | Sentry (errors) · UptimeRobot (uptime) · AWS CloudWatch (infra) |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- **Python 3.11+** and [uv](https://docs.astral.sh/uv/) (or pip)
+- **Python 3.11** and [uv](https://docs.astral.sh/uv/)
 - **Node.js 18+** and npm
 - **Docker** and Docker Compose
 - **Twilio account** with a phone number
@@ -104,7 +106,7 @@ TriageAI automates the first point of contact. A patient calls a phone number, s
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/TriageAI.git
+git clone https://github.com/polranirav/TriageAI.git
 cd TriageAI
 ```
 
@@ -115,30 +117,24 @@ cp .env.example .env
 # Edit .env with your API keys and configuration
 ```
 
-### 3. Run with Docker (recommended)
-
-```bash
-# Production mode
-docker-compose -f docker-compose.prod.yml up --build -d
-
-# The app will be available at https://your-domain.com
-```
-
-### 4. Run locally (development)
+### 3. Run locally (development)
 
 ```bash
 # Backend
 cd backend
-uv sync
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv venv --python 3.11 .venv
+uv pip install -e ".[dev]"
+docker compose up db -d          # start local Postgres
+.venv/bin/alembic upgrade head   # run migrations
+ENVIRONMENT=development .venv/bin/uvicorn app.main:app --reload --port 8000
 
-# Frontend (in a new terminal)
+# Frontend (new terminal)
 cd frontend
 npm install
-npm run dev
+npm run dev    # http://localhost:5173
 ```
 
-### 5. Configure Twilio
+### 4. Configure Twilio Webhook
 
 1. Go to your [Twilio Console](https://console.twilio.com)
 2. Set your phone number's webhook URL to: `https://your-domain.com/v1/voice`
@@ -146,157 +142,214 @@ npm run dev
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TriageAI/
 ├── backend/
 │   ├── app/
-│   │   ├── admin/          # Admin dashboard API routes
-│   │   ├── logging/        # Session & event logging
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── triage/         # CTAS classifier, routing logic, prompts
-│   │   ├── voice/          # Twilio webhook, media bridge, audio codec
-│   │   ├── config.py       # Environment configuration
-│   │   └── main.py         # FastAPI app entry point
-│   ├── tests/              # Pytest test suite
+│   │   ├── admin/          # JWT-protected admin API (analytics, sessions, export)
+│   │   ├── escalation/     # Twilio Conference warm transfer
+│   │   ├── logging/        # Session & event logger (zero PII)
+│   │   ├── models/         # SQLAlchemy ORM models
+│   │   ├── retention.py    # PIPEDA 90-day auto-delete background task
+│   │   ├── routing/        # Ontario care routing messages
+│   │   ├── triage/         # CTAS classifier, state machine, prompts, config
+│   │   ├── voice/          # Twilio webhook, OpenAI media bridge, audio codec
+│   │   ├── config.py       # Pydantic settings (all env vars)
+│   │   └── main.py         # FastAPI app, lifespan, middleware
+│   ├── tests/unit/         # 139 unit tests (73%+ coverage)
 │   ├── alembic/            # Database migrations
 │   ├── Dockerfile
 │   └── pyproject.toml
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Dashboard pages
-│   │   └── lib/            # API client, utilities
-│   ├── Dockerfile
+│   │   ├── components/     # StatCard, CTASBadge, EcgLoader, EmptyState, layout
+│   │   ├── pages/          # Landing, Login, Overview, Sessions, Analytics, Reports, etc.
+│   │   └── lib/api.ts      # Typed API client (auth + all endpoints)
+│   ├── Dockerfile          # Multi-stage production build (Vite → Caddy)
 │   └── package.json
-├── docker-compose.yml          # Local development
-├── docker-compose.prod.yml     # Production deployment
-├── Caddyfile                   # Reverse proxy config
-└── .env.example                # Environment template
+├── .github/workflows/
+│   ├── ci.yml              # Ruff lint + pytest on every push/PR
+│   └── deploy.yml          # SSH → EC2, docker compose up, migrate, smoke test
+├── docker-compose.yml      # Local development (api + db)
+├── docker-compose.prod.yml # Production (api + frontend + caddy + db)
+├── Caddyfile               # HTTPS, WebSocket proxy, gzip, security headers
+├── RUNBOOK.md              # Rollback procedures, incident response, smoke tests
+└── .env.example            # All required env vars with comments
 ```
 
 ---
 
-## 🔧 Configuration
+## Environment Variables
 
-All configuration is done via environment variables. See [`.env.example`](.env.example) for the full list.
+All configuration is via environment variables. See [`.env.example`](.env.example) for the full list.
 
 | Variable | Description | Required |
-|:---------|:------------|:--------:|
+|----------|------------|:--------:|
 | `TWILIO_ACCOUNT_SID` | Twilio account identifier | ✅ |
 | `TWILIO_AUTH_TOKEN` | Twilio authentication token | ✅ |
-| `TWILIO_PHONE_NUMBER` | Twilio phone number (E.164) | ✅ |
-| `OPENAI_API_KEY` | OpenAI API key with Realtime access | ✅ |
-| `DATABASE_URL` | PostgreSQL connection string | ✅ |
-| `BASE_URL` | Public HTTPS URL for WebSocket | ✅ |
-| `SECRET_KEY` | JWT signing key (64 chars) | ✅ |
-| `ADMIN_EMAIL` | Dashboard login email | ✅ |
-| `ADMIN_PASSWORD` | Dashboard login password | ✅ |
-| `ESCALATION_PHONE_NUMBER` | Nurse line for L1/L2 transfers | ✅ |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number (E.164 format) | ✅ |
+| `ESCALATION_PHONE_NUMBER` | On-call nurse line for L1/L2 warm transfers | ✅ |
+| `OPENAI_API_KEY` | OpenAI API key (Realtime API access required) | ✅ |
+| `DATABASE_URL` | PostgreSQL async connection string | ✅ |
+| `BASE_URL` | Public HTTPS URL (used for Twilio WebSocket callback) | ✅ |
+| `SECRET_KEY` | JWT signing key (64+ random characters) | ✅ |
+| `ENVIRONMENT` | `development` or `production` | ✅ |
+| `RETENTION_DAYS` | Auto-delete sessions after N days (default: `90`) | — |
+| `SENTRY_DSN` | Sentry error tracking DSN | — |
 
 ---
 
-## 📊 Dashboard
+## Admin Dashboard
 
-The admin dashboard provides real-time visibility into the triage system:
+In `development` mode, any credentials bypass auth. In `production`, JWT is enforced.
 
-- **Live Monitor** — Active calls with duration and question progress
-- **All Sessions** — Searchable history with CTAS level, routing decision, and duration
-- **Escalations** — Filtered view of emergency escalations
-- **Analytics** — CTAS distribution, call volume trends, average duration
-- **Reports** — Exportable summaries for clinic administrators
-- **Settings** — Clinic configuration and system preferences
-
----
-
-## 🔒 Security & Compliance
-
-- **PIPEDA / PHIPA Compliant** — Designed for Ontario healthcare privacy regulations
-- **Zero PII Storage** — No personal health information is stored in logs or analytics
-- **Auto-Deletion** — Triage records are purged after configurable retention period (default: 90 days)
-- **Consent-First** — AI discloses its nature and obtains consent at the start of every call
-- **Twilio Signature Validation** — All incoming webhooks are cryptographically verified
-- **HTTPS Only** — TLS enforced via Caddy with automatic certificate management
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page (marketing) |
+| `/login` | Admin login |
+| `/dashboard` | Overview — KPIs, CTAS donut, recent calls, 14-day bar chart |
+| `/dashboard/sessions` | All sessions with CTAS filter, search, and CSV export |
+| `/dashboard/sessions/:id` | Session detail with event timeline |
+| `/dashboard/analytics` | Weekly CTAS trend, call volume heatmap, routing breakdown |
+| `/dashboard/escalations` | L1/L2 emergency calls only |
+| `/dashboard/reports` | CSV export + PHIPA compliance reference |
+| `/dashboard/live` | Live call monitor |
+| `/dashboard/settings` | Clinic configuration |
 
 ---
 
-## 🧪 Testing
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health check |
+| `POST` | `/v1/voice` | Twilio voice webhook (TwiML response) |
+| `WS` | `/v1/media-stream` | Twilio ↔ OpenAI bidirectional audio bridge |
+| `POST` | `/v1/escalate` | Trigger warm transfer (requires Twilio signature) |
+| `GET` | `/v1/admin/live` | Live call data |
+| `GET` | `/v1/admin/sessions` | Session list (paginated, filterable by CTAS/escalation) |
+| `GET` | `/v1/admin/sessions/:id` | Session detail + event timeline |
+| `GET` | `/v1/admin/analytics/summary` | KPI summary (calls, escalation rate, duration, deflections) |
+| `GET` | `/v1/admin/analytics/weekly-trend` | Per-week CTAS breakdown |
+| `GET` | `/v1/admin/analytics/daily` | Per-day CTAS breakdown |
+| `GET` | `/v1/admin/analytics/heatmap` | 7×8 call volume heatmap (day × 3-hour slot) |
+| `GET` | `/v1/admin/analytics/routing-breakdown` | Routing destination distribution |
+| `GET` | `/v1/admin/export/sessions.csv` | Authenticated CSV export |
+| `GET/PUT` | `/v1/admin/settings` | Clinic settings |
+
+---
+
+## Security & Compliance
+
+- **PIPEDA / PHIPA Compliant** — Designed specifically for Ontario healthcare privacy regulations
+- **Zero PII Storage** — No names, phone numbers, transcripts, or audio ever stored
+- **Consent-First** — AI reads the PIPEDA disclosure verbatim before every call
+- **Auto-Deletion** — Sessions purged after configurable retention period (default: 90 days)
+- **Twilio Signature Validation** — Every webhook cryptographically verified (HTTP 403 on failure)
+- **HTTPS Only** — TLS enforced by Caddy with automatic Let's Encrypt certificates
+- **Security Headers** — X-Frame-Options, X-Content-Type-Options, Referrer-Policy, HSTS (prod)
+- **Rate Limiting** — Voice webhook: 20/min · Escalation endpoint: 5/min
+
+---
+
+## Testing
 
 ```bash
 cd backend
 
-# Run all tests
-uv run pytest
+# Run unit tests
+ENVIRONMENT=development SECRET_KEY=test \
+  DATABASE_URL=postgresql+asyncpg://test:test@localhost:5432/test \
+  .venv/bin/pytest tests/unit/ -v
 
-# Run with coverage
-uv run pytest --cov=app --cov-report=term-missing
+# With coverage
+.venv/bin/pytest tests/unit/ --cov=app --cov-report=term-missing
 
-# Run specific test modules
-uv run pytest tests/test_classifier.py -v
+# Lint
+.venv/bin/ruff check .
 ```
+
+- **139 tests**, **73%+ coverage**
+- P0 safety tests cover: `classify_ctas()`, `should_escalate_early()`, `mark_escalated()`
 
 ---
 
-## 🚢 Deployment
+## Deployment (AWS EC2)
 
-TriageAI is designed to run on a single EC2 instance (or any Docker-capable server):
+The project deploys automatically via GitHub Actions on every push to `main`.
+
+### Infrastructure
+
+| Component | Details |
+|-----------|---------|
+| **Cloud** | AWS EC2 — `t3.small`, region `ca-central-1` (Canada) |
+| **OS** | Ubuntu 22.04 LTS |
+| **Reverse proxy** | Caddy — automatic HTTPS (Let's Encrypt), WebSocket upgrade, gzip, security headers |
+| **Containers** | Docker Compose (`docker-compose.prod.yml`) — api + frontend + caddy + db |
+| **Database** | PostgreSQL in Docker (or Supabase Session Pooler for managed option) |
+
+### Required GitHub Secrets for CI/CD
+
+```
+EC2_HOST         # EC2 public IP or Elastic IP
+EC2_USER         # SSH user (e.g. ubuntu)
+EC2_SSH_KEY      # Private SSH key for EC2 access
+DOMAIN           # Your public domain (e.g. triageai.example.com)
+```
+
+### First-time EC2 setup
 
 ```bash
-# SSH into your server
-ssh user@your-server
+# Install Docker on EC2
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker $USER && newgrp docker
 
-# Clone and configure
-git clone https://github.com/your-username/TriageAI.git
+# Clone repo and configure
+git clone https://github.com/polranirav/TriageAI.git
 cd TriageAI
 cp .env.example .env
-# Edit .env with production values
+nano .env   # fill in all production values
 
 # Deploy
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up -d --build
 
-# Run database migrations
-docker exec triageai-api-1 alembic upgrade head
+# Run migrations
+docker compose -f docker-compose.prod.yml exec api alembic upgrade head
 ```
 
-See [`DEPLOY.md`](DEPLOY.md) for detailed deployment instructions.
+### Subsequent deploys (automated via CI/CD)
+
+Every push to `main`:
+1. GitHub Actions runs `ruff check` + `pytest tests/unit/`
+2. On success: SSH to EC2 → `git pull` → `docker compose build + up` → `alembic upgrade head`
+3. Smoke test: `GET https://$DOMAIN/health` → must return `200`
+
+See [`RUNBOOK.md`](RUNBOOK.md) for rollback procedures and incident response.
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
-- [x] Voice triage pipeline (Twilio ↔ OpenAI)
-- [x] CTAS-based classification engine
-- [x] Emergency detection & warm transfer
+- [x] Voice triage pipeline (Twilio ↔ OpenAI Realtime API)
+- [x] CTAS-based classification engine (5-level, safety-first)
+- [x] Emergency detection & warm transfer (Twilio Conference bridge)
 - [x] Admin dashboard with live monitoring
-- [x] Session history & analytics
-- [x] Docker deployment pipeline
+- [x] Session history, analytics, CSV export
+- [x] AWS EC2 deployment with GitHub Actions CI/CD
+- [x] PIPEDA/PHIPA compliance (zero PII, auto-deletion)
 - [ ] Multilingual support (French / Mandarin / Hindi)
 - [ ] SMS follow-up after triage
 - [ ] Multi-tenant SaaS (Stripe billing)
 - [ ] FHIR integration for EHR hand-off
-- [ ] Mobile app for clinic staff
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-<p align="center">
-  Built with ❤️ for Ontario's healthcare system
-</p>
+*Built for Ontario's 2.3M unattached patients and the CHCs that serve them.*
