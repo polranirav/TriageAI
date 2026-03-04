@@ -138,6 +138,22 @@ async def _configure_openai_session(openai_ws: Any) -> None:
     )
 
 
+async def _trigger_initial_greeting(openai_ws: Any) -> None:
+    """Send a response.create to make the AI speak its opening greeting immediately."""
+    await openai_ws.send(
+        json.dumps({
+            "type": "response.create",
+            "response": {
+                "modalities": ["audio", "text"],
+                "instructions": (  # noqa: E501
+                    "Greet the caller with the opening line from your instructions. "
+                    "Say it exactly as written, then wait for the caller to respond."
+                ),
+            },
+        })
+    )
+
+
 # ── Twilio → OpenAI ──────────────────────────────────────────────────────────
 
 
@@ -197,43 +213,81 @@ async def _receive_from_openai(
 ) -> None:
     """
     Read OpenAI Realtime events and forward audio back to Twilio.
-
-    Event types handled:
-      response.audio.delta                  — AI speech chunk → μ-law → Twilio
-      response.function_call_arguments.done — submit_triage call → classify
-      session.created                       — log OpenAI session ID
-      error                                 — log warning (non-fatal)
+    Uses explicit recv() instead of async iteration for websockets v12 compat.
     """
-    async for raw in openai_ws:
-        if isinstance(raw, bytes):
-            continue  # OpenAI sends JSON strings; bytes are unexpected
+    audio_chunks_sent = 0
+    log.info("openai_listener_started")
+    try:
+        while True:
+            try:
+                raw = await openai_ws.recv()
+            except websockets.exceptions.ConnectionClosed:
+                log.info("openai_ws_closed")
+                break
 
-        data: dict = json.loads(raw)
-        event_type: str = data.get("type", "")
+            if isinstance(raw, bytes):
+                continue
 
-        if event_type == "response.audio.delta":
-            delta = data.get("delta", "")
-            if delta:
-                pcm16_bytes = base64.b64decode(delta)
-                ulaw_bytes = pcm16_to_ulaw(pcm16_bytes)
-                stream_sid = shared.get("stream_sid", "")
-                await twilio_ws.send_text(
-                    json.dumps({
-                        "event": "media",
-                        "streamSid": stream_sid,
-                        "media": {"payload": encode_for_twilio(ulaw_bytes)},
-                    })
-                )
+            data: dict = json.loads(raw)
+            event_type: str = data.get("type", "")
 
-        elif event_type == "response.function_call_arguments.done":
-            await _process_triage_submission(data, shared, log)
+            # Debug: log non-audio event types
+            skip_events = (
+                "response.audio.delta", "input_audio_buffer.speech_started",
+                "input_audio_buffer.speech_stopped", "input_audio_buffer.committed",
+            )
+            if event_type not in skip_events:
+                log.info("openai_event", event_type=event_type)
 
-        elif event_type == "session.created":
-            log.info("openai_session_created", openai_session_id=data.get("session", {}).get("id"))
+            if event_type == "response.audio.delta":
+                delta = data.get("delta", "")
+                if delta:
+                    pcm16_bytes = base64.b64decode(delta)
+                    ulaw_bytes = pcm16_to_ulaw(pcm16_bytes)
+                    stream_sid = shared.get("stream_sid", "")
+                    await twilio_ws.send_text(
+                        json.dumps({
+                            "event": "media",
+                            "streamSid": stream_sid,
+                            "media": {"payload": encode_for_twilio(ulaw_bytes)},
+                        })
+                    )
+                    audio_chunks_sent += 1
+                    if audio_chunks_sent == 1:
+                        log.info("first_audio_chunk_sent_to_twilio")
+                    elif audio_chunks_sent % 100 == 0:
+                        log.info("audio_chunks_sent", count=audio_chunks_sent)
 
-        elif event_type == "error":
-            err = data.get("error", {})
-            log.warning("openai_error", error_type=err.get("type"), message=err.get("message"))
+            elif event_type == "response.audio_transcript.delta":
+                transcript = data.get("delta", "")
+                if transcript:
+                    log.info("ai_speaking", text=transcript[:80])
+
+            elif event_type == "response.function_call_arguments.done":
+                await _process_triage_submission(data, shared, log)
+
+            elif event_type == "session.created":
+                session_id = data.get("session", {}).get("id")
+                log.info("openai_session_created", openai_session_id=session_id)
+
+            elif event_type == "session.updated":
+                log.info("openai_session_updated")
+                # NOW trigger the greeting — session is fully configured
+                await _trigger_initial_greeting(openai_ws)
+                log.info("greeting_triggered")
+
+            elif event_type == "response.created":
+                log.info("openai_response_created")
+
+            elif event_type == "response.done":
+                log.info("openai_response_done", audio_chunks_total=audio_chunks_sent)
+
+            elif event_type == "error":
+                err = data.get("error", {})
+                log.warning("openai_error", error_type=err.get("type"), message=err.get("message"))
+
+    except Exception:
+        log.exception("openai_listener_error")
 
 
 # ── Triage classification ─────────────────────────────────────────────────────

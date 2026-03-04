@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { api, type AnalyticsSummary, type CTASDistributionItem, type SessionSummary } from "../lib/api"
+import { api, type AnalyticsSummary, type CTASDistributionItem, type SessionSummary, type DailyItem } from "../lib/api"
 import { StatCard } from "../components/ui/StatCard"
 import { CTASBadge, type CTASLevel } from "../components/ui/CTASBadge"
 import { EmptyState } from "../components/ui/EmptyState"
@@ -15,6 +15,7 @@ export function Overview() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [distribution, setDistribution] = useState<CTASDistributionItem[]>([])
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([])
+  const [dailyData, setDailyData] = useState<DailyItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -22,10 +23,12 @@ export function Overview() {
       api.analyticsSummary(30),
       api.ctasDistribution(30),
       api.listSessions({ per_page: 5 }),
-    ]).then(([sumResult, distResult, sessResult]) => {
+      api.analyticsDaily(14),
+    ]).then(([sumResult, distResult, sessResult, dailyResult]) => {
       if (sumResult.status === "fulfilled") setSummary(sumResult.value)
       if (distResult.status === "fulfilled") setDistribution(distResult.value.distribution)
       if (sessResult.status === "fulfilled") setRecentSessions(sessResult.value.sessions)
+      if (dailyResult.status === "fulfilled") setDailyData(dailyResult.value.daily)
       setLoading(false)
     })
   }, [])
@@ -37,8 +40,8 @@ export function Overview() {
   const avgDuration = summary?.avg_duration_sec ?? 0
   const nonEmergencyPct = summary?.non_emergency_pct ?? 0
 
-  // Sparkline mock data (7-day trend) — will be API-driven later
-  const sparkline7d = [12, 15, 10, 18, 14, 23, totalCalls || 20]
+  // Sparkline — all zeros when no real data
+  const sparkline7d = totalCalls > 0 ? [0, 0, 0, 0, 0, 0, totalCalls] : [0, 0, 0, 0, 0, 0, 0]
 
   // Donut chart data
   const donutData = distribution.map((d, i) => ({
@@ -47,22 +50,10 @@ export function Overview() {
     color: CTAS_COLORS[d.level - 1] || CTAS_COLORS[4],
   }))
 
-  // Bar chart data (14 days — mock with distribution trends)
-  const barData = Array.from({ length: 14 }, (_, i) => {
-    const day = new Date()
-    day.setDate(day.getDate() - (13 - i))
-    const label = day.toLocaleDateString("en-CA", { weekday: "short", day: "numeric" })
-    const base = Math.floor(Math.random() * 8) + 5
-    return {
-      name: label,
-      L5: Math.floor(base * 0.30),
-      L4: Math.floor(base * 0.35),
-      L3: Math.floor(base * 0.20),
-      L2: Math.floor(base * 0.10),
-      L1: Math.floor(base * 0.05),
-      total: base,
-    }
-  })
+  const barData = dailyData.map((d) => ({
+    name: new Date(d.date + "T12:00:00").toLocaleDateString("en-CA", { weekday: "short", day: "numeric" }),
+    L1: d.l1, L2: d.l2, L3: d.l3, L4: d.l4, L5: d.l5,
+  }))
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto animate-fade-in space-y-6">
@@ -83,7 +74,7 @@ export function Overview() {
           value={totalCalls}
           format="number"
           icon={<Phone className="w-4 h-4" />}
-          trend={{ value: "+12%", direction: "up", label: "vs last period" }}
+          trend={totalCalls > 0 ? { value: String(totalCalls), direction: "up", label: "this period" } : undefined}
           sparklineData={sparkline7d}
           accentColor="#3B82F6"
         />
@@ -92,8 +83,8 @@ export function Overview() {
           value={Math.round(nonEmergencyPct)}
           format="percent"
           icon={<Activity className="w-4 h-4" />}
-          trend={{ value: "69%", direction: "up", label: "routed from ER" }}
-          sparklineData={[58, 62, 61, 65, 68, 70, Math.round(nonEmergencyPct) || 69]}
+          trend={totalCalls > 0 ? { value: `${Math.round(nonEmergencyPct)}%`, direction: "up", label: "routed from ER" } : undefined}
+          sparklineData={[0, 0, 0, 0, 0, 0, Math.round(nonEmergencyPct)]}
           accentColor="#10B981"
         />
         <StatCard
@@ -101,11 +92,11 @@ export function Overview() {
           value={Math.round(escalationRate * 100)}
           format="percent"
           icon={<AlertTriangle className="w-4 h-4" />}
-          trend={{
+          trend={totalCalls > 0 ? {
             value: `${Math.round(escalationRate * 100)}%`,
             direction: escalationRate > 0.15 ? "up" : "down",
             label: "of all calls",
-          }}
+          } : undefined}
           specialBorder={escalationRate > 0.1 ? "#FF6B0040" : undefined}
           accentColor="#FF6B00"
         />
@@ -114,8 +105,8 @@ export function Overview() {
           value={Math.round(avgDuration)}
           format="duration"
           icon={<Clock className="w-4 h-4" />}
-          trend={{ value: "−8s", direction: "down", label: "vs last period" }}
-          sparklineData={[185, 172, 168, 175, 162, 158, Math.round(avgDuration) || 161]}
+          trend={totalCalls > 0 ? { value: `${Math.round(avgDuration)}s`, direction: "neutral", label: "avg this period" } : undefined}
+          sparklineData={[0, 0, 0, 0, 0, 0, Math.round(avgDuration)]}
           accentColor="#3B82F6"
         />
       </div>
@@ -264,7 +255,10 @@ export function Overview() {
       <div className="panel p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-section text-text-primary">Call Volume — Last 14 Days</h2>
-          <button className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors">
+          <button
+            onClick={() => api.exportSessionsCSV(14).catch(() => {})}
+            className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors"
+          >
             <Download className="w-3.5 h-3.5" />
             Export CSV
           </button>

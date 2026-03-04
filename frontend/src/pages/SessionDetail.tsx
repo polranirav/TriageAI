@@ -34,6 +34,7 @@ export function SessionDetail() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<SessionDetailType | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function SessionDetail() {
     api
       .sessionDetail(id)
       .then(setData)
-      .catch(() => { })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load session"))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -53,9 +54,9 @@ export function SessionDetail() {
   }
 
   if (loading) return <EcgLoader className="min-h-[60vh]" />
-  if (!data) return (
+  if (error || !data) return (
     <div className="p-8 text-center">
-      <p className="text-text-secondary">Session not found.</p>
+      <p className="text-text-secondary">{error || "Session not found."}</p>
       <Link to="/dashboard/sessions" className="text-primary-500 hover:underline mt-2 block">
         ← Back to Sessions
       </Link>

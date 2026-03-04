@@ -8,12 +8,24 @@ import {
 import { logout } from "../../lib/api"
 import { useState } from "react"
 
-const NAV_SECTIONS = [
+interface NavItem {
+  name: string
+  path: string
+  icon: typeof LayoutDashboard
+  badge?: string
+}
+
+interface NavSection {
+  label: string
+  items: NavItem[]
+}
+
+const NAV_SECTIONS: NavSection[] = [
   {
     label: "OVERVIEW",
     items: [
       { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-      { name: "Live Monitor", path: "/dashboard/live", icon: Radio, badge: "SOON" },
+      { name: "Live Monitor", path: "/dashboard/live", icon: Radio },
     ],
   },
   {
@@ -28,8 +40,8 @@ const NAV_SECTIONS = [
     label: "CLINIC",
     items: [
       { name: "Configuration", path: "/dashboard/settings", icon: Settings },
-      { name: "Reports", path: "/dashboard/reports", icon: FileText, badge: "SOON" },
-      { name: "Help & Docs", path: "/dashboard/help", icon: HelpCircle, badge: "SOON" },
+      { name: "Reports", path: "/dashboard/reports", icon: FileText },
+      { name: "Help & Docs", path: "/dashboard/help", icon: HelpCircle },
     ],
   },
 ]

@@ -9,12 +9,9 @@
   :root {
     color-scheme: dark;
   }
-  
+
   body {
     @apply bg-canvas text-text-secondary font-sans antialiased;
-    selection {
-      @apply bg-primary-500 text-white;
-    }
   }
 
   ::selection {
@@ -22,7 +19,12 @@
     color: #ffffff;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: #E8F0FE;
   }
 
@@ -31,19 +33,23 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: #243554;
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: #2D4A78;
   }
 }
 
 @layer components {
+
   /* Card surface panel */
   .panel {
     background: #162033;
@@ -51,6 +57,7 @@
     border-radius: 12px;
     backdrop-filter: blur(4px);
   }
+
   .panel:hover {
     border-color: #2D4A78;
   }
@@ -62,6 +69,7 @@
     overflow: hidden;
     position: relative;
   }
+
   .ecg-loader::after {
     content: '';
     position: absolute;
@@ -108,12 +116,25 @@
 }
 
 @keyframes ecgSweep {
-  0%   { left: -50%; }
-  100% { left: 100%; }
+  0% {
+    left: -50%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
 
 @keyframes l1BadgePulse {
-  0%   { box-shadow: 0 0 0 0 rgba(255,45,45,0.4); }
-  70%  { box-shadow: 0 0 0 8px rgba(255,45,45,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,45,45,0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 45, 45, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 45, 45, 0);
+  }
 }

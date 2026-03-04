@@ -1,6 +1,6 @@
 /**
  * TriageAI API client — all backend API calls go through here.
- * 
+ *
  * Handles authentication, error formatting, and base URL configuration.
  */
 
@@ -61,6 +61,28 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   return res.json() as Promise<T>
 }
 
+/** Download a file from an authenticated endpoint — triggers browser save dialog. */
+async function apiDownload(path: string, filename: string): Promise<void> {
+  const headers: Record<string, string> = {}
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`
+
+  const res = await fetch(`${API_BASE}${path}`, { headers })
+
+  if (res.status === 401) {
+    logout()
+    throw new Error("Session expired. Please log in again.")
+  }
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface AnalyticsSummary {
@@ -107,13 +129,52 @@ export interface SessionDetail {
   events: EventItem[]
 }
 
+export interface TodayStats {
+  total_calls: number
+  escalations: number
+  active_count: number
+  avg_duration_sec: number | null
+}
+
+export interface LiveDashboardData {
+  active_calls: SessionSummary[]
+  recent_sessions: SessionSummary[]
+  today_stats: TodayStats
+}
+
+export interface WeeklyTrendItem {
+  week: string
+  total: number
+  l1: number
+  l2: number
+  l3: number
+  l4: number
+  l5: number
+}
+
+export interface DailyItem {
+  date: string
+  total: number
+  l1: number
+  l2: number
+  l3: number
+  l4: number
+  l5: number
+}
+
+export interface RoutingBreakdownItem {
+  action: string
+  count: number
+  percentage: number
+}
+
 // ── API functions ────────────────────────────────────────────────────────────
 
 export const api = {
   // Health
   health: () => apiFetch<{ status: string }>("/health"),
 
-  // Analytics
+  // Analytics — summary & CTAS distribution
   analyticsSummary: (days = 30) =>
     apiFetch<AnalyticsSummary>(`/v1/admin/analytics/summary?days=${days}`),
 
@@ -121,6 +182,23 @@ export const api = {
     apiFetch<{ distribution: CTASDistributionItem[] }>(
       `/v1/admin/analytics/ctas-distribution?days=${days}`
     ),
+
+  // Analytics — extended charts
+  analyticsWeeklyTrend: (weeks = 12) =>
+    apiFetch<{ trend: WeeklyTrendItem[] }>(
+      `/v1/admin/analytics/weekly-trend?weeks=${weeks}`
+    ),
+
+  analyticsDaily: (days = 14) =>
+    apiFetch<{ daily: DailyItem[] }>(`/v1/admin/analytics/daily?days=${days}`),
+
+  analyticsRoutingBreakdown: (days = 30) =>
+    apiFetch<{ routing: RoutingBreakdownItem[] }>(
+      `/v1/admin/analytics/routing-breakdown?days=${days}`
+    ),
+
+  analyticsHeatmap: (days = 30) =>
+    apiFetch<{ heatmap: number[][] }>(`/v1/admin/analytics/heatmap?days=${days}`),
 
   // Sessions
   listSessions: (params: {
@@ -139,4 +217,34 @@ export const api = {
 
   sessionDetail: (callSid: string) =>
     apiFetch<SessionDetail>(`/v1/admin/sessions/${callSid}`),
+
+  // Export
+  exportSessionsCSV: (days = 30) =>
+    apiDownload(
+      `/v1/admin/export/sessions.csv?days=${days}`,
+      `triageai-sessions-${days}d.csv`
+    ),
+
+  // Live monitor
+  liveData: () =>
+    apiFetch<LiveDashboardData>("/v1/admin/live"),
+
+  // Settings
+  getSettings: () =>
+    apiFetch<ClinicSettings>(`/v1/admin/settings`),
+
+  updateSettings: (data: ClinicSettings) =>
+    apiFetch<ClinicSettings>(`/v1/admin/settings`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+}
+
+export interface ClinicSettings {
+  clinic_name: string
+  oncall_number: string
+  escalation_sla: string
+  sms_alerts: boolean
+  email_digest: boolean
+  critical_only: boolean
 }

@@ -15,6 +15,7 @@ export function Sessions() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [ctasFilter, setCtasFilter] = useState<number | undefined>()
   const [escalatedFilter, setEscalatedFilter] = useState<boolean | undefined>()
   const [search, setSearch] = useState("")
@@ -22,6 +23,7 @@ export function Sessions() {
 
   useEffect(() => {
     setLoading(true)
+    setError(null)
     api
       .listSessions({
         page,
@@ -33,11 +35,14 @@ export function Sessions() {
         setSessions(res.sessions)
         setTotal(res.total)
       })
-      .catch(() => { })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load sessions"))
       .finally(() => setLoading(false))
   }, [page, ctasFilter, escalatedFilter])
 
   const totalPages = Math.ceil(total / perPage)
+  const filtered = search
+    ? sessions.filter((s) => s.call_sid.toLowerCase().includes(search.toLowerCase()))
+    : sessions
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto animate-fade-in space-y-6">
@@ -50,13 +55,12 @@ export function Sessions() {
           </p>
         </div>
         <div className="hidden md:flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors">
+          <button
+            onClick={() => api.exportSessionsCSV(30).catch(() => {})}
+            className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors"
+          >
             <Download className="w-3.5 h-3.5" />
             Export CSV
-          </button>
-          <button className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary hover:text-text-primary border border-border-default rounded-md px-3 py-1.5 transition-colors">
-            <Download className="w-3.5 h-3.5" />
-            Export PDF
           </button>
         </div>
       </div>
@@ -107,10 +111,16 @@ export function Sessions() {
         </select>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-300">
+          {error}
+        </div>
+      )}
+
       {/* Sessions Table */}
       {loading ? (
         <EcgLoader />
-      ) : sessions.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={List}
           title="No sessions found"
@@ -129,7 +139,7 @@ export function Sessions() {
           </div>
 
           {/* Table Rows */}
-          {sessions.map((s) => {
+          {filtered.map((s) => {
             const time = new Date(s.started_at)
             const dateStr = time.toLocaleDateString("en-CA", {
               weekday: "short", day: "numeric", month: "short",

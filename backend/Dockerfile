@@ -5,14 +5,14 @@ WORKDIR /app
 # Install dependencies in a separate layer for caching
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+  pip install --no-cache-dir .
 
 # ── Production image ──────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
 # Create non-root user
 RUN groupadd --gid 1001 appgroup && \
-    useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
+  useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
 
 WORKDIR /app
 
@@ -24,6 +24,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY app/ ./app/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
+
+# Create data directory for settings persistence
+RUN mkdir -p /app/data && chown appuser:appgroup /app/data
 
 # Switch to non-root user
 USER appuser

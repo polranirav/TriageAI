@@ -9,6 +9,9 @@ const Overview = lazy(() => import("./pages/Overview").then((module) => ({ defau
 const Sessions = lazy(() => import("./pages/Sessions").then((module) => ({ default: module.Sessions })))
 const Analytics = lazy(() => import("./pages/Analytics").then((module) => ({ default: module.Analytics })))
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })))
+const Reports = lazy(() => import("./pages/Reports").then((module) => ({ default: module.Reports })))
+const Help = lazy(() => import("./pages/Help").then((module) => ({ default: module.Help })))
+const LiveMonitor = lazy(() => import("./pages/LiveMonitor").then((module) => ({ default: module.LiveMonitor })))
 const SessionDetail = lazy(() => import("./pages/SessionDetail").then((module) => ({ default: module.SessionDetail })))
 const Escalations = lazy(() => import("./pages/Escalations").then((module) => ({ default: module.Escalations })))
 const Landing = lazy(() => import("./pages/Landing").then((module) => ({ default: module.Landing })))
@@ -42,9 +45,12 @@ function App() {
             <Route index element={<Overview />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
-            <Route path="analytics" element={<Analytics />} />
             <Route path="escalations" element={<Escalations />} />
+            <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="help" element={<Help />} />
+            <Route path="live" element={<LiveMonitor />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

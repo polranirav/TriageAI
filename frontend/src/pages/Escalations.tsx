@@ -12,13 +12,18 @@ import {
 export function Escalations() {
     const [sessions, setSessions] = useState<SessionSummary[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [activeCount, setActiveCount] = useState(0)
 
     useEffect(() => {
         api
             .listSessions({ per_page: 50, escalated: true })
             .then((res) => setSessions(res.sessions))
-            .catch(() => { })
+            .catch((err) => setError(err instanceof Error ? err.message : "Failed to load escalations"))
             .finally(() => setLoading(false))
+        api.liveData()
+            .then((data) => setActiveCount(data.today_stats.active_count))
+            .catch(() => {})
     }, [])
 
     // Split into today / this month
@@ -43,8 +48,14 @@ export function Escalations() {
             </div>
 
             {/* Summary pills */}
+            {error && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-300">
+                    {error}
+                </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-3">
-                <Pill color="#10B981" label="Active" value="0" />
+                <Pill color="#10B981" label="Active" value={String(activeCount)} />
                 <Pill color="#FF6B00" label="Today" value={String(todaySessions.length)} />
                 <Pill color="#3B82F6" label="This Period" value={String(sessions.length)} />
             </div>
